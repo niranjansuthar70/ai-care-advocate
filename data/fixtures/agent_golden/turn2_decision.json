@@ -1,0 +1,37 @@
+{
+  "analysis": {
+    "no_answer": false,
+    "verbal_order_noted": false,
+    "written_order_submitted": false,
+    "order_in_queue": true,
+    "billing_code": null,
+    "order_signed": false,
+    "rejection_reason": null,
+    "summary": "Written order still in MA queue; doctor has not signed yet."
+  },
+  "verification": {
+    "patient_details_confirmed": true,
+    "order_details_confirmed": true,
+    "followup_scheduled": true,
+    "closing_attempted": true,
+    "rejection_detected": false
+  },
+  "state_update": {
+    "current_phase": "followup",
+    "current_status": "following up with PCP for written order",
+    "order_signed": false,
+    "patient_informed": false,
+    "contact_status": "contacted"
+  },
+  "patient_loop": {
+    "should_inform_patient": false,
+    "patient_status_summary": "Still waiting on Dr. Chen to sign written K0001 order.",
+    "patient_message_draft": null,
+    "waiting_on": "pcp"
+  },
+  "next_action": "nudge",
+  "phase_before": "followup",
+  "phase_after": "followup",
+  "confidence": 0.9,
+  "reasoning": "Second nudge — order remains in MA queue with no signature yet. Continue followup."
+}

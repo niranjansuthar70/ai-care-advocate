@@ -1,0 +1,37 @@
+{
+  "analysis": {
+    "no_answer": false,
+    "verbal_order_noted": true,
+    "written_order_submitted": false,
+    "order_in_queue": true,
+    "billing_code": "K0001",
+    "order_signed": false,
+    "rejection_reason": null,
+    "summary": "Verbal order noted; written order in MA queue."
+  },
+  "verification": {
+    "patient_details_confirmed": true,
+    "order_details_confirmed": true,
+    "followup_scheduled": true,
+    "closing_attempted": true,
+    "rejection_detected": false
+  },
+  "state_update": {
+    "current_phase": "followup",
+    "current_status": "following up with PCP for written order",
+    "order_signed": false,
+    "patient_informed": false,
+    "contact_status": "contacted"
+  },
+  "patient_loop": {
+    "should_inform_patient": false,
+    "patient_status_summary": "Chasing PCP for written K0001 order; verbal order in chart, written pending in MA queue.",
+    "patient_message_draft": null,
+    "waiting_on": "pcp"
+  },
+  "next_action": "nudge",
+  "phase_before": "verification",
+  "phase_after": "followup",
+  "confidence": 0.92,
+  "reasoning": "Verbal order noted in chart; written K0001 not submitted; MA queue backed up. All verification checks passed on first call. Nudge PCP again in a few days."
+}

@@ -5,9 +5,10 @@ import json
 import sys
 from pathlib import Path
 
+from src.pcp.agents.apply import apply_agent_decision, load_decision, load_state
 from src.pcp.engine.actions import ActionDecider
 from src.pcp.engine.engine import PcpCommunicationEngine
-from src.pcp.engine.models import PcpCallEvent
+from src.pcp.engine.models import PcpCallEvent, PcpCommunicationState
 from src.pcp.generators.stochastic import StochasticCallGenerator
 from src.pcp.persistence import persist_engine_run
 
@@ -114,6 +115,43 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_agent_apply(args: argparse.Namespace) -> int:
+    decision = load_decision(args.decision_file)
+    transcript = _load_transcript(transcript=args.transcript, transcript_file=args.transcript_file)
+    prior = load_state(args.state_file) if args.state_file else PcpCommunicationState()
+
+    result = apply_agent_decision(
+        decision=decision,
+        transcript=transcript,
+        state=prior,
+        days_since_last_contact=args.days_since_last,
+    )
+
+    print_event(result.event, state=result.state)
+    print(f"  agent confidence={decision.confidence:.2f} | reasoning={decision.reasoning}")
+    print(f"  patient_loop: inform={result.patient_loop.should_inform_patient} | {result.patient_loop.patient_status_summary}")
+
+    paths = persist_engine_run(
+        state=result.state,
+        events=[result.event],
+        output_dir=args.output_dir,
+    )
+    print(f"[saved] state={paths['state']}")
+    print(f"[saved] events={paths['events']}")
+    print(f"[saved] recordings={paths['recordings']}")
+
+    if args.json:
+        print(json.dumps(result.decision.model_dump(mode="json"), indent=2))
+    return 0
+
+
+def cmd_agent_validate(args: argparse.Namespace) -> int:
+    decision = load_decision(args.decision_file)
+    print(f"[valid] decision file OK — next_action={decision.next_action.value} phase={decision.state_update.current_phase.value}")
+    print(f"  confidence={decision.confidence} reasoning={decision.reasoning[:80]}...")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PCP communication engine demo")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -128,6 +166,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("process", parents=[common], help="Process a single call transcript")
     sub.add_parser("run", parents=[common], help="Run until terminal with stochastic follow-ups")
+
+    agent_apply = sub.add_parser("agent-apply", help="Apply agent decision JSON for one call turn")
+    agent_apply.add_argument("--decision-file", type=Path, required=True)
+    agent_apply.add_argument("--transcript-file", type=Path, default=DEFAULT_INITIAL)
+    agent_apply.add_argument("--transcript", type=str)
+    agent_apply.add_argument("--state-file", type=Path)
+    agent_apply.add_argument("--days-since-last", type=int, default=0)
+    agent_apply.add_argument("--output-dir", type=Path)
+    agent_apply.add_argument("--json", action="store_true")
+
+    agent_validate = sub.add_parser("agent-validate", help="Validate agent decision JSON schema")
+    agent_validate.add_argument("--decision-file", type=Path, required=True)
+
     return parser
 
 
@@ -138,6 +189,10 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_process(args)
     if args.command == "run":
         return cmd_run(args)
+    if args.command == "agent-apply":
+        return cmd_agent_apply(args)
+    if args.command == "agent-validate":
+        return cmd_agent_validate(args)
     parser.error(f"Unknown command: {args.command}")
     return 1
 

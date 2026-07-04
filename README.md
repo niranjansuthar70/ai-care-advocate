@@ -39,3 +39,19 @@ Artifacts written to `data/output/`:
 ```bash
 pytest
 ```
+
+## PCP Event Agent (Cursor skill)
+
+Skill path: `.cursor/skills/pcp-event-agent/SKILL.md`
+
+**Test in Cursor chat:**
+
+> Use pcp-event-agent skill. Transcript: @data/fixtures/pcp_initial.txt. Prior state: @data/fixtures/agent_golden/turn1_prior_state.json. Return decision JSON only.
+
+Save JSON, then apply:
+
+```bash
+python -m src.pcp.cli agent-validate --decision-file data/output/agent_decision.json
+python -m src.pcp.cli agent-apply --decision-file data/fixtures/agent_golden/turn1_decision.json --transcript-file data/fixtures/pcp_initial.txt --state-file data/fixtures/agent_golden/turn1_prior_state.json
+pytest tests/test_pcp_agent_skill.py -v
+```

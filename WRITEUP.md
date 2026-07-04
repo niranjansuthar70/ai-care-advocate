@@ -2,37 +2,54 @@
 
 ## Sequencing
 
-Four coordination surfaces in the spec (supplier, PCP, Medicare, patient). With a 3-hour box, we shipped **one vertical slice** — the **PCP communication engine** — that proves the pattern end-to-end.
+Four surfaces in the spec (supplier, PCP, Medicare, patient). We shipped **one PCP vertical slice** in two phases:
 
-**Why PCP first:** longest pole in Eleanor's case (verbal order in chart, written K0001 pending), and it forces the full state model: contact timestamps, verification checklist, phase transitions, next-action logic, and `delta_conversion_time`.
+### Phase 1 — Deterministic engine (baseline)
 
-**Build order:** models → state machine → scripted analyzer → action decider → engine loop → stochastic generator → CLI + persistence. Each step tested before moving on.
+Built first to **define the contract** — what fields matter, what phases exist, what actions are valid.
 
-**Supplier (~1 day):** same skeleton — swap context, verification keys (enrollment, stock, area), and action pool. Patient callback and Medicare check are the same template; no new orchestration.
+**Order:** models → state machine → scripted analyzer → action decider → engine loop → stochastic generator → CLI + persistence.
+
+Each step tested in isolation (`pytest`, 49 tests). Keyword parser + Python rules produce reproducible output for demo and CI golden checks.
+
+```bash
+python -m src.pcp.cli process --transcript-file data/fixtures/pcp_initial.txt
+python -m src.pcp.cli run --seed 10    # signed
+python -m src.pcp.cli run --seed 42    # timeout
+```
+
+### Phase 2 — Skill-based agent (one turn per call)
+
+Once the deterministic path proved the schema, we added a **Cursor skill** (`.cursor/skills/pcp-event-agent/`) that replaces analyzer + state machine + decider **in one agent turn**:
+
+```
+transcript + prior state → agent JSON decision → agent-apply → same PcpCallEvent + state
+```
+
+One invocation = one phone call. Golden decisions in `data/fixtures/agent_golden/` validate against the deterministic baseline. Same Pydantic shapes — agent output must match what the rules engine would produce on fixtures.
+
+```bash
+python -m src.pcp.cli agent-apply --decision-file data/fixtures/agent_golden/turn1_decision.json \
+  --transcript-file data/fixtures/pcp_initial.txt --state-file data/fixtures/agent_golden/turn1_prior_state.json
+```
+
+**Why deterministic first, then skill:** rules give a trustworthy baseline and eval target; the skill slot is where LLM reasoning lands in production without rewriting persistence or state models.
+
+**Supplier (~1 day):** same dual path — deterministic module first, then skill per surface.
 
 ---
 
 ## Technology & Architecture
 
-**Stack:** Python 3.13, Pydantic v2, pytest, `uv`. No DB/UI — JSON/CSV under `data/output/`.
+**Stack:** Python 3.13, Pydantic v2, pytest, `uv`. JSON/CSV artifacts under `data/output/`.
 
-**Pipeline:**
+| Path | Role |
+|------|------|
+| Deterministic | `ScriptedTranscriptAnalyzer` → `state_machine` → `ActionDecider` → `PcpCommunicationEngine` |
+| Skill-based | Cursor skill → `PcpAgentDecision` JSON → `apply_agent_decision()` |
+| Shared | `PcpCommunicationState`, `PcpCallEvent`, persistence, CLI |
 
-```
-transcription_text → analyzer → state machine → action decider → PcpCallEvent → aggregate state → persist
-```
-
-Multi-call runs use a **seeded stochastic generator** (fixture-weighted mock transcripts). Phase transitions and action priority are **deterministic**; tie-breaks (nudge vs schedule followup) are **stochastic** for demo realism.
-
-**Swap points:** `TranscriptAnalyzer` protocol (scripted → LLM), `CallGenerator` protocol (fixtures → telephony + STT), persistence (files → Postgres).
-
-**Design:** immutable event log + derived state; cumulative verification flags; reproducible runs via RNG seed.
-
-```bash
-python -m src.pcp.cli process --transcript-file data/fixtures/pcp_initial.txt
-python -m src.pcp.cli run --seed 10    # signed path
-python -m src.pcp.cli run --seed 42    # timeout path
-```
+**Design:** immutable event log; cumulative verification; seeded stochastic mock calls for multi-turn demos; protocols for STT/LLM swap later.
 
 ---
 
@@ -40,56 +57,27 @@ python -m src.pcp.cli run --seed 42    # timeout path
 
 | Deferred | Why |
 |----------|-----|
-| Supplier / patient / Medicare surfaces | Same engine template; ~1 day each |
-| Top-level orchestrator | Needs two surfaces + handoff gate |
-| LLM, STT, telephony | Mocked per spec; protocols in place |
-| DB, auth, UI, PCP portal | Out of scope for time box |
+| Supplier / patient / Medicare | Same template; ~1 day each |
+| LLM-backed agent (runtime) | Skill tested manually in Cursor; OpenAI wired via `.env` next |
+| STT, telephony, DB, UI | Mocked per spec |
 
 ---
 
 ## What's Next
 
-### +1 day: Supplier (pattern scales)
+### +1 day: Supplier
 
-- Directory CSV → mock call loop → extract keys (enrolled, stock, area) → qualify/disqualify
-- Handoff gate: `pcp.order_signed AND supplier.qualified` → place order
-- Other surfaces (patient callback, coverage) reuse the same engine if time allows
+Directory CSV → deterministic loop + skill → handoff gate (`signed order + qualified supplier`).
 
-### +1–2 weeks: STT, LLM, HITL, evaluation
+### +1–2 weeks: STT, LLM agent, HITL, evaluation
 
-**1. STT + transcription pipeline**  
-Audio / telephony webhook → STT API → `transcription_text` → existing `process_transcript()`. Fixtures become fallback for tests only.
+1. **STT** — audio → `transcription_text` → existing pipeline  
+2. **LLM agent** — replace Cursor skill with API call; same `PcpAgentDecision` schema  
+3. **HITL** — low-confidence / terminal actions → advocate review before apply; override events on audit trail  
+4. **Evaluation** — golden transcript set; field precision/recall + action agreement vs deterministic baseline; HITL override rate; CI gate  
+5. **Orchestrator + Postgres** — wire surfaces; metrics on `delta_conversion_time`
 
-**2. LLM analyzer**  
-Structured extraction into the same Pydantic schema (verification flags, billing code, signed/rejected). State machine and decider stay unchanged — only the parser swaps.
-
-**3. HITL (human-in-the-loop)**  
-Not everything should auto-run. Add explicit review gates:
-
-- **Low-confidence extractions** — LLM returns confidence scores; below threshold → queue for advocate review before state transition
-- **Irreversible actions** — inform patient, close case, give up after max contacts → require approve / edit / reject in a simple review UI
-- **Override path** — advocate can correct verification flags or force next action; correction logged as a `HumanOverrideEvent` on the audit trail
-- **Escalation** — wrong billing code, PCP decline, or repeated no-answer → auto-flag for human takeover instead of looping blindly
-
-HITL sits **between analyzer and state machine** on ingest, and **before terminal actions** on outbound — automation handles the happy path; humans catch edge cases.
-
-**4. Evaluation**  
-Measure whether the pipeline is safe to widen automation:
-
-| Layer | What to eval | How |
-|-------|--------------|-----|
-| Extraction | Verification flags, billing code, signed/rejected | Golden transcript set (~50–100 labeled calls); precision/recall per field |
-| Actions | Next action vs advocate label | Offline replay on historical cases; agreement rate |
-| End-to-end | Time-to-signed, contact count | Compare `delta_conversion_time` vs human baseline on held-out cases |
-| HITL | Override rate, time-to-review | Track % of calls hitting review queue; target ↓ as model improves |
-| Regression | CI gate | pytest on rules + eval harness on golden set before deploy |
-
-Start with a **golden fixture set** (extend current transcripts) and an eval script that reports field-level accuracy and action agreement — same shape as pytest, runnable in CI.
-
-**5. Orchestrator + persistence**  
-Wire PCP + supplier + patient surfaces; Postgres case state; metrics dashboard on conversion time and HITL override rate.
-
-**Why this order:** STT/LLM plug into existing swap points. HITL and eval come **with** LLM rollout — you need confidence thresholds and golden sets before trusting extraction in production. Orchestrator and DB last, once structured output is measured and reviewable.
+Deterministic engine stays as **regression baseline**; skill/LLM must not drift from validated schemas.
 
 ---
 
