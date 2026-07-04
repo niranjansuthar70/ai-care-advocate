@@ -1,0 +1,18 @@
+{
+  "contact_status": "contacted",
+  "contacted_at": "2026-07-04T10:00:00",
+  "last_communication_at": "2026-07-04T10:00:00",
+  "current_phase": "followup",
+  "current_status": "following up with PCP for written order",
+  "contact_count": 1,
+  "order_signed": false,
+  "patient_informed": false,
+  "delta_conversion_time": null,
+  "verification": {
+    "patient_details_confirmed": true,
+    "order_details_confirmed": true,
+    "followup_scheduled": true,
+    "closing_attempted": true,
+    "rejection_detected": false
+  }
+}

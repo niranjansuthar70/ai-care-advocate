@@ -10,5 +10,3 @@ wheels/
 .venv
 
 # Generated supplier pipeline artifacts
-data/output/*
-!data/output/.gitkeep
