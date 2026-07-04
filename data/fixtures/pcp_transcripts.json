@@ -1,0 +1,12 @@
+{
+  "verify_patient_ok": "Front desk: Yes, Eleanor Martinez is on file with Medicare Part B. Date of birth confirmed.",
+  "verify_patient_partial": "Front desk: I see a Martinez on file but need to confirm DOB before releasing details.",
+  "verify_order_ok": "Front desk: The order is for a standard manual wheelchair, billing code K0001, medically necessary per visit notes.",
+  "verify_order_partial": "Front desk: The chart mentions wheelchair but billing code is not confirmed yet.",
+  "schedule_followup_ok": "Front desk: Please call back Thursday to check whether Dr. Chen has signed the order.",
+  "in_queue": "Front desk: The written order is still in the MA queue waiting for Dr. Chen to review. Verbal order noted in chart.",
+  "ma_reviewing": "Front desk: The medical assistant confirmed the request reached Dr. Chen. Doctor is reviewing today.",
+  "no_answer": "Advocate: Hello? [Phone rang 4 times — no answer, left voicemail.]",
+  "signed": "Front desk: Dr. Chen signed the K0001 manual wheelchair order today and submitted it to the DME supplier.",
+  "rejected_wrong_code": "Front desk: Doctor signed order with billing code K0002 power wheelchair — wrong code for this request."
+}

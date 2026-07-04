@@ -1,0 +1,12 @@
+{
+  "action_weights": {
+    "followup": {
+      "nudge": 0.6,
+      "schedule_followup": 0.4
+    },
+    "no_answer": {
+      "retry": 0.85,
+      "nudge": 0.15
+    }
+  }
+}

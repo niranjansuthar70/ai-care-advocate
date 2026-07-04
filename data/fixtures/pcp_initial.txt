@@ -1,0 +1,11 @@
+Advocate: Hi, this is Maya from care coordination. I'm calling Sunrise Family Medicine about Eleanor Martinez, a 72-year-old Medicare Part B patient in Chicago. She had a visit with Dr. Sarah Chen three days ago and needs a written order for a standard manual wheelchair, billing code K0001.
+
+Front desk: One moment... I see Eleanor Martinez in the chart. There's a verbal order noted from the visit, but the written order has not been submitted yet. It's in the medical assistant queue waiting for Dr. Chen to review.
+
+Advocate: Can you confirm her Medicare Part B coverage and that the order is for K0001 manual wheelchair?
+
+Front desk: Yes, Medicare Part B is on file. The verbal note mentions manual wheelchair. Written paperwork still pending doctor signature.
+
+Advocate: When should I call back to check status?
+
+Front desk: Try again in a few days — the MA queue is backed up this week.
