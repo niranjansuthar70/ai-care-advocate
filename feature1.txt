@@ -1,0 +1,9 @@
+make following changes
+1. we dont need module 3 to call pcp
+2. also decision should be (nudge/followup, done, rejected)
+3. so based on extract_update we can decide next decision
+4. then no need for module 3
+5. so ideal flow would be
+a. input initial trasnscription + initial state (initialize if not) > extract_update + merge state > decide next action 
+b. if next action is done then contact patient
+c. also if decision if nudge/followup then ask user for transciption text file for next run

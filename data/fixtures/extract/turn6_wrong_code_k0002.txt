@@ -1,0 +1,11 @@
+Advocate: Hi, this is Maya from care coordination, following up on Eleanor Martinez's DME order from Dr. Sarah Chen.
+
+Front desk: The written order was signed and submitted today.
+
+Advocate: Can you confirm the billing code on the signed paperwork?
+
+Front desk: The order on file is for a power wheelchair, billing code K0002.
+
+Advocate: We were expecting a standard manual wheelchair, billing code K0001. Can that be corrected?
+
+Front desk: I can flag it for the clinical team, but the signed order currently shows K0002.

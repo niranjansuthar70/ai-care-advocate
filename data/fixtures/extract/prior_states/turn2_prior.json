@@ -1,0 +1,18 @@
+{
+  "patient_id": "eleanor-martinez",
+  "equipment": "standard manual wheelchair",
+  "billing_code": "K0001",
+  "pcp_name": "Dr. Sarah Chen",
+  "pcp_phone": "312-555-0142",
+  "order_status": "awaiting_confirmation",
+  "last_contact_date": "2026-07-09T12:00:00+00:00",
+  "contact_attempts": 1,
+  "followup_count": 1,
+  "transcript_log": [
+    "Advocate: Hi, this is Maya from care coordination. I'm calling Sunrise Family Medicine about Eleanor Martinez..."
+  ],
+  "next_action": "followup",
+  "patient_informed": false,
+  "patient_message_draft": null,
+  "last_decision_summary": "Verbal order noted; written order pending."
+}
